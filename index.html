@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .weather-container {
+            max-width: 500px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #weatherData {
+            margin-top: 20px;
+        }
+
+        .weather-card {
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .weather-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .temperature {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .weather {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        .error-message {
+            color: #f44336;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <h1>Weather Information</h1>
+        <form id="searchForm">
+            <label for="city">Enter city:</label>
+            <input type="text" id="city" name="city" placeholder="E.g., New York" required>
+            <button type="submit" style="margin-left: 2%;">Search</button>
+        </form>
+        <div id="weatherData"></div>
+    </div>
+
+    <script>
+        const apiKey = 'GVxtP5lhOruuzWO90ymuzql7KVzdk9NR';
+        const endpoint = 'https://dataservice.accuweather.com';
+
+        const searchForm = document.getElementById('searchForm');
+        const weatherDataContainer = document.getElementById('weatherData');
+
+        searchForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const city = document.getElementById('city').value.trim();
+            if (city === '') {
+                alert('Please enter a city name');
+                return;
+            }
+
+            try {
+                // Fetch location key for the city
+                const locationResponse = await fetch(`${endpoint}/locations/v1/cities/search?q=${city}&apikey=${apiKey}`);
+                if (!locationResponse.ok) {
+                    throw new Error('Location not found');
+                }
+                const locationData = await locationResponse.json();
+                if (!locationData || locationData.length === 0) {
+                    throw new Error('Location data not found');
+                }
+                const locationKey = locationData[0].Key;
+
+                // Fetch current conditions for the city
+                const currentConditionsResponse = await fetch(`${endpoint}/currentconditions/v1/${locationKey}?apikey=${apiKey}`);
+                if (!currentConditionsResponse.ok) {
+                    throw new Error('Weather data not available');
+                }
+                const currentConditionsData = await currentConditionsResponse.json();
+                if (!currentConditionsData || currentConditionsData.length === 0) {
+                    throw new Error('Current conditions not found');
+                }
+
+                // Extract relevant data
+                const cityName = locationData[0].EnglishName;
+                const countryName = locationData[0].Country.EnglishName;
+                const temperature = currentConditionsData[0].Temperature.Metric.Value;
+                const weatherText = currentConditionsData[0].WeatherText;
+
+                // Construct HTML for displaying weather data
+                const weatherHtml = `
+                    <div class="weather-card">
+                        <h2>${cityName}, ${countryName}</h2>
+                        <p class="temperature">${temperature}°C</p>
+                        <p class="weather">${weatherText}</p>
+                    </div>
+                `;
+
+                // Update weather data container with the generated HTML
+                weatherDataContainer.innerHTML = weatherHtml;
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                weatherDataContainer.innerHTML = '<p class="error-message">Weather data not available. Please try again later.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
